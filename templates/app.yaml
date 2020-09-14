@@ -1,0 +1,99 @@
+---
+# Create the namespace which will encapsulate all of our resources.
+# This lets us bring up multiple environments in different namespaces easily.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Namespace }}
+---
+# By default, prevent any service from talking to any other service.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: {{ .Namespace }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+# Example of using If/Else in templates, in this case to decide between a local persistent volume if we are running a
+# a local kubernetes cluster, or a GCE disk.
+{{if .LocalDiskPath}}---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: my-storage-class
+  labels:
+    app: database
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+# Create a volume that consists of a directory on the node.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-volume
+  labels:
+    app: myapp
+spec:
+  capacity:
+    storage: {{ .Capacity }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: my-storage-class
+  local:
+    path: {{ .LocalDiskPath }} # You will need to 'minikube mount '<some dir>:<LocalDiskPath>' for this to work.
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - minikube
+{{else}}---
+# If we are running kubernetes non-locally, we need create a cloud based storage class to use for persistence. In this
+# case, we assume the user is using GCE, and will use regular, slow, disk.
+# Put your cloud persistence storage class of choice here.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: my-storage-class
+  labels:
+    app: database
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+  replication-type: none
+{{end}}---
+# You can create a claim that references the above created storage class and persistent volume, and as long as your
+# systems support either, it should just work.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-volume-claim
+  namespace: {{ .Namespace }}
+  labels:
+    app: myapp
+spec:
+  storageClassName: my-storage-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Capacity }}
+---
+# Example of generating some environment variables in a configmap using our registered 'GeneratePassword' function.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-configmap
+  namespace: {{ .Namespace }}
+  labels:
+    app: myapp
+data:
+  USER: admin
+  PASSWORD: {{ GeneratePassword }}
+---
