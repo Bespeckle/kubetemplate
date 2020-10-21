@@ -56,7 +56,7 @@ spec:
 {{else}}---
 # If we are running kubernetes non-locally, we need create a cloud based storage class to use for persistence. In this
 # case, we assume the user is using GCE, and will use regular, slow, disk.
-# Put your cloud persistence storage class of choice here.
+# I just chose GCE because it's something I've used before. Don't hold it against me.
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:

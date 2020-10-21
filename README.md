@@ -7,7 +7,7 @@ files that represent Kubernetes objects.
 
 **/templates**
 
-Holds the code which executes the templates, as well a sample template file.
+Holds the code which executes the templates, as well a sample templated YAML file.
 
 **/kubernetes**
 
@@ -33,7 +33,7 @@ described in the **/templates/app.yaml** file in the described kubernetes enviro
 
 There are a number of flags which you can see by running ``./main --help``:
 
-    Usage of ./main:
+Usage of ./main:
     
     -capacity string
     
@@ -45,7 +45,7 @@ There are a number of flags which you can see by running ``./main --help``:
       	
     -localDiskPath string
     
-      	path to use when using a local disk path for the persistent volume
+      	path to use when using a local disk path for the persistent volume (defaults to Google Cloud storage as opposed to a local disk path)
       	
     -namespace string
     
@@ -53,4 +53,4 @@ There are a number of flags which you can see by running ``./main --help``:
       	
     -yamlPath string
     
-      	path to the template yaml files to launch
+      	path to the template yaml files to launch (defaults to /templates relative to the running binary)
